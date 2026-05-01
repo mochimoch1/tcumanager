@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0">    <title>コースリスト - WebClass</title>
+
+    <link href="/webclass/css/bootstrap_gray.css?time=1772011385" rel="stylesheet" type="text/css" />
+    <link href="/webclass/css/webclass.css?time=1772011385" rel="stylesheet" type="text/css" />
+
+    <script class="js-config" type="application/json">{"TOP_URL":"\/webclass\/","language":"JAPANESE","feature.message":true,"feature.information":1}</script>
+    <script class="js-message" type="application/json">{"INFORMATIONS":"\u304a\u77e5\u3089\u305b","MESSAGES":"\u30e1\u30c3\u30bb\u30fc\u30b8","MSG_EDITOR_REDIRECT":""}</script>
+    <script src="/webclass/js/jquery/jquery-1.9.1.min.js"></script>
+    <script src="/webclass/js/webclass.js?time=1772011382"></script>
+    <script src="/webclass/js/wcui/wcwindow.js?time=1772011383"></script>
+    <script src="/webclass/js/bootstrap.min.js?time=1772011383"></script>
+    <script src="/webclass/js/vendor.js?time=1772011383"></script>
+    <script src="/webclass/js/notification.js?time=1772011382"></script>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-default" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <div class="navbar-brand">
+                    <a class="course-webclass" href="/webclass/">WebClass</a>
+                </div>
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#menu">
+                    <span class="sr-only">ナビゲーション</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span id="mobile-menu-badge" class="hd-mobileMenu_badge hidden hidden-sm hidden-md hidden-lg"></span>
+                </button>
+            </div>
+            <ul class="nav navbar-nav navbar-right  hidden-xs">
+                <li id="notification-dropdown-area" class="dropdown">
+                                    <a id="notification-dropdown-icon" class="dropdown-toggle disabled"
+                       href="/webclass/msg_editor.php?msgappmode=inbox&amp;acs_=0cefddac"
+                       onclick="return openMessageWindow('/webclass/msg_editor.php?msgappmode=inbox&amp;acs_=0cefddac')"
+                       target="msgeditor" aria-haspopup="true" aria-expanded="true">
+                        <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
+                        <span id="js-unread-message-count" class="badge hidden hd-notification_badge"></span>
+                    </a>
+                                    </li>
+                                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="言語">
+                        <span>言語</span>
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=JAPANESE&amp;acs_=0cefddac">日本語</a></li><li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=ENGLISH&amp;acs_=0cefddac">English</a></li><li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=KOREAN&amp;acs_=0cefddac">한국어</a></li><li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=CHINESE&amp;acs_=0cefddac">简体中文</a></li><li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=CHINESE-TW&amp;acs_=0cefddac">正體中文</a></li>                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a href="" class="dropdown-toggle" data-toggle="dropdown" style="padding: 10px;" title="アカウントメニュー">
+                        <span>竹原　洸希</span>
+                        <img width="30" src="/webclass/user.php/identicon.png" style="border: solid #ffffff; background: #ffffff"></a>
+                    <ul class="dropdown-menu">
+                        <li class=""><a class="account-menu__menu__link" href="/webclass/login.php?top_menu=1&amp;acs_=0cefddac"  >コースリスト</a></li><li class="divider"></li><li class=""><a class="account-menu__menu__link" href="/webclass/eportfolio.php/showcases/?acs_=0cefddac"  >ショーケースポートフォリオ</a></li><li class="divider"></li><li class=""><a class="account-menu__menu__link" href="/webclass/user.php/config?acs_=0cefddac" target="AccountAlt" onclick="openPopupWindow('/webclass/user.php/config?acs_=0cefddac','AccountAlt', 1024, 800)">アカウント情報の変更</a></li><li class=""><a class="account-menu__menu__link" href="/webclass/user.php/manual?popup=1&amp;acs_=0cefddac" target="HelpWindow" onclick="openPopupWindow('/webclass/user.php/manual?popup=1&acs_=0cefddac', 'HelpWindow', 1024, 800)">マニュアル・サンプルファイル</a></li><li class=""><a class="account-menu__menu__link" href="javascript:void(0)"  onclick="openPopupWindow('https://datapacific.zohodesk.com/portal/ja/kb/webclass-faq', 'HelpWindow', 1024, 800, true)">FAQ (外部サイト)</a></li>                    </ul>
+                </li>
+            </ul>
+        </div>
+        <div class="container" >
+            <div class="collapse navbar-collapse" id="menu">
+                <ul class="nav navbar-nav navbar-right"><li><a href="/webclass/logout.php?acs_=0cefddac">ログアウト</a></li><li class="nav-divider"></li></ul>                <ul class="nav navbar-nav navbar-left">
+                    <li class="dropdown active"><a href="" class="dropdown-toggle" data-toggle="dropdown">コース<span class="caret"></span></a><ul class="dropdown-menu"><li><a href="/webclass/index.php/?acs_=0cefddac" ><i class="fa  fa-fw" aria-hidden="true"></i>&nbsp;コースリスト</a></li><li><a href="/webclass/index.php/courses/?acs_=0cefddac" ><i class="fa  fa-fw" aria-hidden="true"></i>&nbsp;参加可能なコース</a></li></ul></li><li class=""><a  href="/webclass/eportfolio.php/showcases/?acs_=0cefddac"><i class="fa  fa-fw" aria-hidden="true"></i>&nbsp;ショーケースポートフォリオ</a></li><li class=""><a  href="/webclass/user.php/manual?acs_=0cefddac"><i class="fa  fa-fw" aria-hidden="true"></i>&nbsp;マニュアル・サンプルファイル</a></li>                </ul>
+                <ul class="nav navbar-nav navbar-left visible-xs-block">
+                    <li class="nav-divider"></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" title="言語">
+                            <span>言語</span>
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=JAPANESE&amp;acs_=0cefddac">日本語</a></li><li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=ENGLISH&amp;acs_=0cefddac">English</a></li><li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=KOREAN&amp;acs_=0cefddac">한국어</a></li><li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=CHINESE&amp;acs_=0cefddac">简体中文</a></li><li><a class="account-menu__menu__link" href="/webclass/user.php/switchLanguage?language=CHINESE-TW&amp;acs_=0cefddac">正體中文</a></li>                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a href="" class="dropdown-toggle" data-toggle="dropdown">竹原　洸希<span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                        <li class=""><a class="account-menu__menu__link" href="/webclass/login.php?top_menu=1&amp;acs_=0cefddac"  >コースリスト</a></li><li class="divider"></li><li class=""><a class="account-menu__menu__link" href="/webclass/eportfolio.php/showcases/?acs_=0cefddac"  >ショーケースポートフォリオ</a></li><li class="divider"></li><li class=""><a class="account-menu__menu__link" href="/webclass/user.php/config?acs_=0cefddac" target="AccountAlt" onclick="openPopupWindow('/webclass/user.php/config?acs_=0cefddac','AccountAlt', 1024, 800)">アカウント情報の変更</a></li><li class=""><a class="account-menu__menu__link" href="/webclass/user.php/manual?popup=1&amp;acs_=0cefddac" target="HelpWindow" onclick="openPopupWindow('/webclass/user.php/manual?popup=1&acs_=0cefddac', 'HelpWindow', 1024, 800)">マニュアル・サンプルファイル</a></li><li class=""><a class="account-menu__menu__link" href="javascript:void(0)"  onclick="openPopupWindow('https://datapacific.zohodesk.com/portal/ja/kb/webclass-faq', 'HelpWindow', 1024, 800, true)">FAQ (外部サイト)</a></li>                        </ul>
+                    </li>
+                                        <li>
+                        <a href="/webclass/mbl.php/messages/?acs_=0cefddac" target="msgeditor">メッセージ                            <span id="mobile-menu-message-badge" class="badge hidden hd-mobileMenu_messageBadge"></span>
+                        </a>
+                    </li>
+                                                            <li class="hidden-sm hidden-md hidden-lg">
+                        <a href="/webclass/information.php/mbl/?acs_=0cefddac" target="msgeditor">お知らせ                            <span id="mobile-menu-information-badge" class="badge hidden hd-mobileMenu_informationBadge"></span>
+                        </a>
+                    </li>
+                                    </ul>
+
+                <ul class="nav navbar-nav navbar-left">
+                                    </ul>
+            </div>
+        </div>
+    </nav>
+    </header>
+<main id="js-main">
+
+    <link type="text/css" href="/webclass/css/informations.css?time=1772011385" rel="stylesheet" />
+
+<style type="text/css">
+.schedule-table {
+  table-layout: fixed;
+    border-collapse : separate;
+    border: solid 1px #bbb;
+}
+.schedule-table td,
+.schedule-table th {
+  padding: 5px;
+}
+.schedule-table thead th:first-child{
+  width: 1%;
+}
+.schedule-table thead th:not(:first-child){
+  width: 15%;
+}
+.schedule-table thead th,
+.schedule-table tr:not(:last-child) th,
+.schedule-table tr:not(:last-child) td{
+  border-bottom: solid 1px #bbb;
+}
+
+.schedule-table th:not(:last-child),
+.schedule-table td:not(:last-child){
+  border-right: solid 1px #bbb;
+}
+.schedule-table thead td,
+.schedule-table thead th {
+  background-color: #eaf4fc;
+  text-align: center;
+  color: #6F6F6F;
+}
+.schedule-table thead th.active {
+    color: #333;
+}
+
+.schedule-table tbody td{
+  background-color: #f9f9f9;
+  font-size: small;
+  position: relative;
+}
+.schedule-table tbody td.active {
+    background-color: #fff;
+}
+.schedule-table tbody td.blank {
+    background-color: #f0f0f0;
+}
+.schedule-table tbody td.active-blank {
+    background-color: #fff;
+}
+.schedule-table tbody td .add-course-link-wrapper{
+  height: 2em;
+}
+.schedule-table tbody td .add-course-link{
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+}
+.courseTree {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.courseLevelOne li {
+    margin-top: 4px;
+    background-color: transparent;
+    color: #000;
+}
+.courseLevelTwo {
+    padding-right: 1em;
+    margin-bottom: 1.5em;
+}
+.courseLevelTwo li {
+    margin-top: 2px;
+    background-color: transparent;
+    color: #000;
+}
+.courseLevelTwo li .title {
+  background: #fff;
+  border: 1px solid #ddd;
+}
+.courseLevelTwo li h5 {
+    margin: 0;
+    padding: 0.5em;
+}
+.courseList {
+  padding-right:1em;
+}
+.courseList li {
+    margin-top: 2px;
+  background-color: #f7f7f7;
+    padding: 0.2em;
+}
+.courseList li a {
+    padding: 0.5em;
+}
+.course-data-box-icon {
+    margin-left : 41px;
+    min-height: 41px;
+}
+.course-data-box-normal {
+
+}
+.course-icon-box {
+    float: left;
+    width: 40px;
+    height: 40px;
+}
+.course-title {
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
+}
+.course-info {
+    padding: 0.2em;
+    color: #666;
+}
+.course-memo,
+.course-message {
+    padding: 0.2em;
+    color: #666;
+    margin-left: 1.5em;
+    font-size: 9pt;
+}
+.course-new-message,
+.course-contents-info {
+    padding-left: 1.5em;
+    font-size: 8pt;
+    color: #db3323;
+}
+
+.available-course-mode-selector{
+  margin: 1em 0 1em 0;
+}
+
+.courseTree-levelTitle{
+  font-size: 11pt;
+  background-color: #eaf4fc;
+  font-weight: normal;
+  margin: 0;
+  padding: .5em;
+}
+.schedule-table td.schedule-table-class_order {
+  background-color: #eaf4fc;
+  font-size: 1em;
+}
+
+.schedule-list .class-order{
+  background-color: #f7f7f7;
+  font-weight: bold;
+}
+.schedule-list .course{
+  padding-left: 2em;
+}    #UserTopInfo{
+        border: solid 1px #f0f0f0;
+        border-radius: 5px;
+        margin-bottom: 2em;
+    }
+    #UserTopInfo .page-header{
+        margin: 0;
+        padding: 0.5em;
+        font-size: 14px;
+        border-bottom: 1px solid #efefef;
+        background-color: #f8f8f8;
+    }
+    .side-block-outer {
+        margin-bottom: 1em;
+    }
+    .side-block {
+        border: solid 1px #f0f0f0;
+        border-radius: 5px;
+    }
+    .side-block-title {
+        margin: 0;
+        padding: 0.5em;
+        font-size: 14px;
+        border-bottom: 1px solid #efefef;
+        background-color: #f8f8f8;
+    }
+    .side-block-content {
+        padding: 0.3em;
+    }
+    .menugroup {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .menugroup a {
+        display: block;
+        padding: 0.2em;
+        font-size: small;
+    }
+
+    .list-group-label-item {
+        background: #eaf4fc;
+    }
+
+    #NewestInformations .info-list li {
+        padding-top: 0.3em;
+        padding-bottom: 0.3em;
+    }
+    @media  (max-width: 991px){
+        #NewestInformations .info-list li .data {
+            float: none;
+            margin-top: 0;
+        }
+    }
+</style>
+<script type="text/javascript" src="/webclass/js/wcui/tab.js?time=1772011383"></script>
+<script type="text/javascript">
+
+$(document).ready(function(){
+function searchCourses(target) {
+    var div;
+    var input;
+
+    if (target == 'left') {
+        div = $('div#courses_list_left');
+        input = $('#search_courses_left');
+    } else {
+        div = $('div#courses_list_right');
+        input = $('#search_courses_right');
+    }
+
+    var ul = $('ul.courseList', div);
+    var li = $('> li', ul);
+    var i;
+    var j;
+
+    input.keyup(function() {
+        if (this.value.length == 0) {
+            for (i = 0; i < li.length; i++) { $(li[i]).show(); }
+            $('#no_course').remove();
+            return;
+        }
+        var value = this.value.toString()
+                .replace(/\\/g, '\\\\')
+                .replace(/\^/g, '\\^')
+                .replace(/\$/g, '\\$')
+                .replace(/\./g, '\\.')
+                .replace(/\*/g, '\\*')
+                .replace(/\+/g, '\\+')
+                .replace(/\?/g, '\\?')
+                .replace(/\(/g, '\\(')
+                .replace(/\)/g, '\\)')
+                .replace(/\[/g, '\\[')
+                .replace(/\]/g, '\\]')
+                .replace(/\{/g, '\\{')
+                .replace(/\}/g, '\\}')
+                .replace(/\|/g, '\\|')
+                .replace(/\=/g, '\\=')
+                .replace(/\!/g, '\\!')
+                .replace(/\</g, '\\<')
+                .replace(/\>/g, '\\>')
+                .replace(/\:/g, '\\:')
+                .replace(/\-/g, '\\-')
+                .split(/[\x20\u3000]/)
+
+        var re = [];
+
+        for (i = 0; i < value.length; i++) {
+            re.push(new RegExp(value[i], 'i'));
+        }
+
+        for (i = 0; i < li.length; i++) {
+            var target_text = $('a', li[i]).text();
+
+            if (target_text.match(re[0])) {
+                $(li[i]).show();
+
+                for (j = 1; j < re.length; j++) {
+                    if ( !target_text.match(re[j]) ) {
+                        $(li[i]).hide();
+                    }
+                }
+            } else {
+                $(li[i]).hide();
+            }
+        }
+
+        if ($(':visible', li).length == 0) {
+            if ($('#no_course').size() == 0 && li.length > 0) {
+                div.prepend($('<p style="margin: 1em">').attr('id', 'no_course').text('コースが見つかりませんでした'));
+            }
+        } else {
+            $('#no_course').remove();
+        }
+    });
+}
+
+searchCourses('left');
+searchCourses('right');
+
+
+
+});
+
+</script>
+<div class="container">
+    <div class="row">
+                    <div class="col-sm-3">
+                                        <div class="side-block-outer hidden-xs" id="View-0">
+                            <div class="side-block">
+                                <h4 class="side-block-title">課題実施状況一覧</h4>
+                                <div class="side-block-content">
+                                    <ul class="menugroup">
+                                        <li><a href="/webclass/ip_mods.php/plugin/score_summary_table/dashboard" class="showInIframeButton">&raquo; ダッシュボード</a>                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                                                <div class="side-block-outer hidden-sm hidden-md hidden-lg" id="View-0">
+                            <div class="side-block">
+                                <h4 class="side-block-title">課題実施状況一覧</h4>
+                                <div class="side-block-content">
+                                    <ul class="menugroup">
+                                        <li><a href="/webclass/ip_mods.php/plugin/score_summary_table/dashboard?returnMenu=1" target="_top">&raquo; ダッシュボード</a>                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                                                            <div class="side-block-outer hidden-xs">
+                        <div class="side-block">
+                            <h4 class="side-block-title">学習記録ビューア</h4>
+                            <div class="side-block-content">
+                                <ul class="menugroup">
+                                    <li><a href='/webclass/ip_mods.php/plugin/webclass/activity/index?m=s&acs_=0cefddac' target='_top'>&raquo; コース活動状況</a></li>                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                
+                            </div>
+                <div class="col-sm-9" >
+                <script>
+        function openMessage(url) {
+            var w = window.open(url, "msgeditor", "toolbar=no, location=no,directories=no,status=yes,menubar=no,scrollbars=yes,resizable=yes,width=820,height=650");
+            if(w !== null) {
+                w.window.focus();
+            }
+        }
+    </script>
+    <div id="UserTopInfo">
+        <h4 class="page-header">管理者からのお知らせ</h4>
+        <div id="NewestInformations" >
+            <div id='AjaxInfoBox'><div class="infopkg">
+<ul class="info-list info-short-list">
+    <li class="head bgc_main">
+    最新5件     (全 13 件)
+     </li>
+<li class='odd'><span class='hidden-xs'><a class="title" href="/webclass/information.php/post/6370/" title="【重要】本日（4/13）と今後の講義形式について" target="msgeditor" onClick="return openMessage('/webclass/information.php/post/6370/')">【重要】本日（4/13）と今後の講義形式について</a></span><span class='visible-xs'><a class="title" href="/webclass/information.php/mbl/post/6370/" title="【重要】本日（4/13）と今後の講義形式について" target="msgeditor" onClick="return openMessage('/webclass/information.php/mbl/post/6370/')">【重要】本日（4/13）と今後の講義形式について</a></span><div class="data"><div class="exhibitionInfo"><span style="font-weight:bold;">心理学(1a)(月4、清水、2026年度前期前半)_saa001441</span> - Apr 13</div></div></li><li class='eve'><span class='hidden-xs'><a class="title unread" href="/webclass/information.php/post/6364/" title="シラバスの表示方法について" target="msgeditor" onClick="return openMessage('/webclass/information.php/post/6364/')">シラバスの表示方法について</a></span><span class='visible-xs'><a class="title unread" href="/webclass/information.php/mbl/post/6364/" title="シラバスの表示方法について" target="msgeditor" onClick="return openMessage('/webclass/information.php/mbl/post/6364/')">シラバスの表示方法について</a></span><div class="data"><div class="exhibitionInfo"><span style="font-weight:bold;">システム管理者</span> - Apr 13</div></div></li><li class='odd'><span class='hidden-xs'><a class="title unread" href="/webclass/information.php/post/3937/" title="誤ってWebClassのコースを追加し、参加してしまった際の退会方法" target="msgeditor" onClick="return openMessage('/webclass/information.php/post/3937/')">誤ってWebClassのコースを追加し、参加してしまった際の退会方法</a></span><span class='visible-xs'><a class="title unread" href="/webclass/information.php/mbl/post/3937/" title="誤ってWebClassのコースを追加し、参加してしまった際の退会方法" target="msgeditor" onClick="return openMessage('/webclass/information.php/mbl/post/3937/')">誤ってWebClassのコースを追加し、参加してしまった際の退会方法</a></span><div class="data"><div class="exhibitionInfo"><span style="font-weight:bold;">システム管理者</span> - Apr 10</div></div></li><li class='eve'><span class='hidden-xs'><a class="title unread mark1" href="/webclass/information.php/post/6230/" title="「論理学(2a)」再テストの教室について" target="msgeditor" onClick="return openMessage('/webclass/information.php/post/6230/')">「論理学(2a)」再テストの教室について</a></span><span class='visible-xs'><a class="title unread mark1" href="/webclass/information.php/mbl/post/6230/" title="「論理学(2a)」再テストの教室について" target="msgeditor" onClick="return openMessage('/webclass/information.php/mbl/post/6230/')">「論理学(2a)」再テストの教室について</a></span><div class="data"><div class="exhibitionInfo"><span style="font-weight:bold;">論理学(2a)(月3、小草、2025年度後期前半)_sba001320</span> - Dec 08</div></div></li><li class='odd last'><span class='hidden-xs'><a class="title unread mark1" href="/webclass/information.php/post/6220/" title="「論理学(2a)」再テストの日程について" target="msgeditor" onClick="return openMessage('/webclass/information.php/post/6220/')">「論理学(2a)」再テストの日程について</a></span><span class='visible-xs'><a class="title unread mark1" href="/webclass/information.php/mbl/post/6220/" title="「論理学(2a)」再テストの日程について" target="msgeditor" onClick="return openMessage('/webclass/information.php/mbl/post/6220/')">「論理学(2a)」再テストの日程について</a></span><div class="data"><div class="exhibitionInfo"><span style="font-weight:bold;">論理学(2a)(月3、小草、2025年度後期前半)_sba001320</span> - Dec 04</div></div></li></ul>
+</div>
+</div>
+            <p align="right" style="margin: 0.5em;" >
+                <span class="hidden-xs ">
+                    <a href="/webclass/information.php/?acs_=0cefddac" target="msgeditor" onclick="return openMessage('/webclass/information.php/?acs_=0cefddac')">&raquo; お知らせ一覧</a>
+                </span>
+                <span class="visible-xs ">
+                    <a href="/webclass/information.php/mbl/?acs_=0cefddac" target="msgeditor" onclick="return openMessage('/webclass/information.php/mbl/?acs_=0cefddac')">&raquo; お知らせ一覧</a>
+                </span>
+            </p>
+        </div>
+    </div>
+                    <h3 class="page-header">参加しているコース</h3>
+                <form action="/webclass/index.php?acs_=0cefddac" name="condition" autocomplete="off" class="form-inline">
+                                        <h4>表示する学期</h4>
+                                        <div>
+                                                    <select name="year" onChange = "javascript:document.condition.submit()" class="form-control">
+                                <option value="all"  >All</option>
+                                <option value='2027'  >2027</option><option value='2026' selected >2026</option><option value='2025'  >2025</option><option value='2024'  >2024</option><option value='2023'  >2023</option><option value='2022'  >2022</option><option value='2021'  >2021</option><option value='2020'  >2020</option><option value='2019'  >2019</option><option value='2018'  >2018</option><option value='2017'  >2017</option><option value='2016'  >2016</option><option value='2015'  >2015</option><option value='2014'  >2014</option><option value='2013'  >2013</option><option value='2012'  >2012</option><option value='2011'  >2011</option><option value='2010'  >2010</option><option value='2009'  >2009</option><option value='2008'  >2008</option><option value='2007'  >2007</option><option value='2006'  >2006</option><option value='2005'  >2005</option><option value='2004'  >2004</option><option value='2003'  >2003</option><option value='2002'  >2002</option><option value='2001'  >2001</option>                            </select>
+                            <select name="semester" onChange = "javascript:document.condition.submit()" class="form-control">
+                                <option value="all"  >All</option>
+                                <option SELECTED VALUE="1">前期</option><option VALUE="2">後期</option><option VALUE="3">前期前半</option><option VALUE="4">前期後半</option><option VALUE="5">後期前半</option><option VALUE="6">後期後半</option>                            </select>
+                                                </div>
+
+                    
+                                            <script>
+                            $(document).ready(function() {
+                                $('[data-toggle=tooltip]').tooltip();
+                            });
+                        </script>
+                        <h4 style="margin-top: 2em;border-top: 1px solid #eee;padding-top: 1em;">時間割表</h4>
+                        <div class=" table-responsive hidden-xs">
+                            <table class="schedule-table" id="schedule-table">
+                                <thead>
+                                <tr>
+                                    <th class=""></th>
+                                    <th height='30' nowrap class='active'>月曜日</th><th height='30' nowrap class=''>火曜日</th><th height='30' nowrap class=''>水曜日</th><th height='30' nowrap class=''>木曜日</th><th height='30' nowrap class=''>金曜日</th><th height='30' nowrap class=''>土曜日</th>                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr data-class_order="1"><td height="55" nowrap class='schedule-table-class_order'>1限</td><TD align="left" valign="top" class='active'><div><a href='/webclass/course.php/26sab321109/login?acs_=0cefddac' Target='_top'>&raquo; ネットワークセキュリティと管理(月1・木1、塩本、2026年度前期後半)_sab321109</a></div><BR><div><a href='/webclass/course.php/26saa321103/login?acs_=0cefddac' Target='_top'>&raquo; ヒューマン・コンピュータ・インタラクション(月1・月2、森、2026年度前期前半)_saa321103<div class='course-new-message'>新着メッセージ(1)</div></a></div></TD><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26yab002102/login?acs_=0cefddac' Target='_top'>&raquo; 心理学入門(火1・火2、大津、2026年度前期後半)_yab002102</a></div></TD><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26saa003114/login?acs_=0cefddac' Target='_top'>&raquo; 人文地理学(a)(水1、新井、2026年度前期前半)_saa003114</a></div></TD><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26sab321109/login?acs_=0cefddac' Target='_top'>&raquo; ネットワークセキュリティと管理(月1・木1、塩本、2026年度前期後半)_sab321109</a></div></TD><td class='blank'><BR></td><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26saa316105/login?acs_=0cefddac' Target='_top'>&raquo; 情報社会と職業(a)(土1、川上、2026年度前期前半)_saa316105<div class='course-new-message'>新着メッセージ(1)</div></a></div></TD></tr><tr data-class_order="2"><td height="55" nowrap class='schedule-table-class_order'>2限</td><TD align="left" valign="top" class='active'><div><a href='/webclass/course.php/26saa321103/login?acs_=0cefddac' Target='_top'>&raquo; ヒューマン・コンピュータ・インタラクション(月1・月2、森、2026年度前期前半)_saa321103<div class='course-new-message'>新着メッセージ(1)</div></a></div><BR><div><a href='/webclass/course.php/26sab321202/login?acs_=0cefddac' Target='_top'>&raquo; 知能情報数学発展/データサイエンス応用(月2・木2、木村、2026年度前期後半)_sab321202</a></div></TD><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26yab002102/login?acs_=0cefddac' Target='_top'>&raquo; 心理学入門(火1・火2、大津、2026年度前期後半)_yab002102</a></div><BR><div><a href='/webclass/course.php/26saa322202/login?acs_=0cefddac' Target='_top'>&raquo; 深層学習(火2・金2、神野、2026年度前期前半)_saa322202<div class='course-new-message'>新着メッセージ(4)</div></a></div></TD><td class='blank'><BR></td><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26saa004243/login?acs_=0cefddac' Target='_top'>&raquo; 社会学(1a)(木2、山田、2026年度前期前半)_saa004243</a></div><BR><div><a href='/webclass/course.php/26sab321202/login?acs_=0cefddac' Target='_top'>&raquo; 知能情報数学発展/データサイエンス応用(月2・木2、木村、2026年度前期後半)_sab321202</a></div></TD><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26saa322202/login?acs_=0cefddac' Target='_top'>&raquo; 深層学習(火2・金2、神野、2026年度前期前半)_saa322202<div class='course-new-message'>新着メッセージ(4)</div></a></div></TD><td class='blank'><BR></td></tr><tr data-class_order="3"><td height="55" nowrap class='schedule-table-class_order'>3限</td><TD align="left" valign="top" class='active'><div><a href='/webclass/course.php/26saa001335/login?acs_=0cefddac' Target='_top'>&raquo; 政治学(1a)(月3、坂井、2026年度前期前半)_saa001335</a></div><BR><div><a href='/webclass/course.php/26sab001336/login?acs_=0cefddac' Target='_top'>&raquo; 政治学(1b)(月3、坂井、2026年度前期後半)_sab001336</a></div></TD><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26saa322302/login?acs_=0cefddac' Target='_top'>&raquo; ｺﾝﾋﾟｭｰﾃｰｼｮﾅﾙﾓﾃﾞﾘﾝｸﾞ(火3・金3、穴田、2026年度前期前半)_saa322302</a></div></TD><td class='blank'><BR></td><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26saa004356/login?acs_=0cefddac' Target='_top'>&raquo; 国際関係論(1a)(木3、伊藤、2026年度前期前半)_saa004356</a></div></TD><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26saa322302/login?acs_=0cefddac' Target='_top'>&raquo; ｺﾝﾋﾟｭｰﾃｰｼｮﾅﾙﾓﾃﾞﾘﾝｸﾞ(火3・金3、穴田、2026年度前期前半)_saa322302</a></div></TD><td class='blank'><BR></td></tr><tr data-class_order="4"><td height="55" nowrap class='schedule-table-class_order'>4限</td><TD align="left" valign="top" class='active'><div><a href='/webclass/course.php/26saa001441/login?acs_=0cefddac' Target='_top'>&raquo; 心理学(1a)(月4、清水、2026年度前期前半)_saa001441</a></div><BR><div><a href='/webclass/course.php/26sab001442/login?acs_=0cefddac' Target='_top'>&raquo; 心理学(1b)(月4、清水、2026年度前期後半)_sab001442</a></div></TD><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26yba006401/login?acs_=0cefddac' Target='_top'>&raquo; 倫理学(a)(火4、笹路、2026年度前期前半)_yba006401</a></div><BR><div><a href='/webclass/course.php/26ybb006401/login?acs_=0cefddac' Target='_top'>&raquo; 倫理学(b)(火4、笹路、2026年度前期後半)_ybb006401</a></div></TD><td class='blank'><BR></td><td class='blank'><BR></td><TD align="left" valign="top" class=''><div><a href='/webclass/course.php/26saa005420/login?acs_=0cefddac' Target='_top'>&raquo; イタリア語(1a)(金4、清水、2026年度前期前半)_saa005420</a></div></TD><td class='blank'><BR></td></tr><tr data-class_order="5"><td height="55" nowrap class='schedule-table-class_order'>5限</td><td class='active-blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td></tr><tr data-class_order="6"><td height="30" nowrap class='schedule-table-class_order'>6限</td><td class='active-blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td></tr><tr data-class_order="7"><td height="30" nowrap class='schedule-table-class_order'>7限</td><td class='active-blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td></tr><tr data-class_order="8"><td height="30" nowrap class='schedule-table-class_order'>8限</td><td class='active-blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td><td class='blank'><BR></td></tr>                                </tbody>
+                            </table>
+                        </div>
+                        <div class="visible-xs list-group schedule-list">
+                            <div class="list-group-item list-group-label-item">月曜日</div><div class="list-group-item class-order">1限</div><a class="list-group-item course" href="/webclass/course.php/26sab321109/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; ネットワークセキュリティと管理(月1・木1、塩本、2026年度前期後半)_sab321109</h4><div class="list-group-item-text"></div></a><a class="list-group-item course" href="/webclass/course.php/26saa321103/login?acs_=0cefddac"><span class='badge'>1</span><h4 class='list-group-item-heading'>&raquo; ヒューマン・コンピュータ・インタラクション(月1・月2、森、2026年度前期前半)_saa321103</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">2限</div><a class="list-group-item course" href="/webclass/course.php/26saa321103/login?acs_=0cefddac"><span class='badge'>1</span><h4 class='list-group-item-heading'>&raquo; ヒューマン・コンピュータ・インタラクション(月1・月2、森、2026年度前期前半)_saa321103</h4><div class="list-group-item-text"></div></a><a class="list-group-item course" href="/webclass/course.php/26sab321202/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 知能情報数学発展/データサイエンス応用(月2・木2、木村、2026年度前期後半)_sab321202</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">3限</div><a class="list-group-item course" href="/webclass/course.php/26saa001335/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 政治学(1a)(月3、坂井、2026年度前期前半)_saa001335</h4><div class="list-group-item-text"></div></a><a class="list-group-item course" href="/webclass/course.php/26sab001336/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 政治学(1b)(月3、坂井、2026年度前期後半)_sab001336</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">4限</div><a class="list-group-item course" href="/webclass/course.php/26saa001441/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 心理学(1a)(月4、清水、2026年度前期前半)_saa001441</h4><div class="list-group-item-text"></div></a><a class="list-group-item course" href="/webclass/course.php/26sab001442/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 心理学(1b)(月4、清水、2026年度前期後半)_sab001442</h4><div class="list-group-item-text"></div></a><div class="list-group-item list-group-label-item">火曜日</div><div class="list-group-item class-order">1限</div><a class="list-group-item course" href="/webclass/course.php/26yab002102/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 心理学入門(火1・火2、大津、2026年度前期後半)_yab002102</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">2限</div><a class="list-group-item course" href="/webclass/course.php/26yab002102/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 心理学入門(火1・火2、大津、2026年度前期後半)_yab002102</h4><div class="list-group-item-text"></div></a><a class="list-group-item course" href="/webclass/course.php/26saa322202/login?acs_=0cefddac"><span class='badge'>4</span><h4 class='list-group-item-heading'>&raquo; 深層学習(火2・金2、神野、2026年度前期前半)_saa322202</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">3限</div><a class="list-group-item course" href="/webclass/course.php/26saa322302/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; ｺﾝﾋﾟｭｰﾃｰｼｮﾅﾙﾓﾃﾞﾘﾝｸﾞ(火3・金3、穴田、2026年度前期前半)_saa322302</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">4限</div><a class="list-group-item course" href="/webclass/course.php/26yba006401/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 倫理学(a)(火4、笹路、2026年度前期前半)_yba006401</h4><div class="list-group-item-text"></div></a><a class="list-group-item course" href="/webclass/course.php/26ybb006401/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 倫理学(b)(火4、笹路、2026年度前期後半)_ybb006401</h4><div class="list-group-item-text"></div></a><div class="list-group-item list-group-label-item">水曜日</div><div class="list-group-item class-order">1限</div><a class="list-group-item course" href="/webclass/course.php/26saa003114/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 人文地理学(a)(水1、新井、2026年度前期前半)_saa003114</h4><div class="list-group-item-text"></div></a><div class="list-group-item list-group-label-item">木曜日</div><div class="list-group-item class-order">1限</div><a class="list-group-item course" href="/webclass/course.php/26sab321109/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; ネットワークセキュリティと管理(月1・木1、塩本、2026年度前期後半)_sab321109</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">2限</div><a class="list-group-item course" href="/webclass/course.php/26saa004243/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 社会学(1a)(木2、山田、2026年度前期前半)_saa004243</h4><div class="list-group-item-text"></div></a><a class="list-group-item course" href="/webclass/course.php/26sab321202/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 知能情報数学発展/データサイエンス応用(月2・木2、木村、2026年度前期後半)_sab321202</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">3限</div><a class="list-group-item course" href="/webclass/course.php/26saa004356/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; 国際関係論(1a)(木3、伊藤、2026年度前期前半)_saa004356</h4><div class="list-group-item-text"></div></a><div class="list-group-item list-group-label-item">金曜日</div><div class="list-group-item class-order">2限</div><a class="list-group-item course" href="/webclass/course.php/26saa322202/login?acs_=0cefddac"><span class='badge'>4</span><h4 class='list-group-item-heading'>&raquo; 深層学習(火2・金2、神野、2026年度前期前半)_saa322202</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">3限</div><a class="list-group-item course" href="/webclass/course.php/26saa322302/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; ｺﾝﾋﾟｭｰﾃｰｼｮﾅﾙﾓﾃﾞﾘﾝｸﾞ(火3・金3、穴田、2026年度前期前半)_saa322302</h4><div class="list-group-item-text"></div></a><div class="list-group-item class-order">4限</div><a class="list-group-item course" href="/webclass/course.php/26saa005420/login?acs_=0cefddac"><h4 class='list-group-item-heading'>&raquo; イタリア語(1a)(金4、清水、2026年度前期前半)_saa005420</h4><div class="list-group-item-text"></div></a><div class="list-group-item list-group-label-item">土曜日</div><div class="list-group-item class-order">1限</div><a class="list-group-item course" href="/webclass/course.php/26saa316105/login?acs_=0cefddac"><span class='badge'>1</span><h4 class='list-group-item-heading'>&raquo; 情報社会と職業(a)(土1、川上、2026年度前期前半)_saa316105</h4><div class="list-group-item-text"></div></a>                        </div>
+                                                <div align="right" style="margin-top: 0.5em;">
+                            <a href="/webclass/index.php/courses/?acs_=0cefddac"
+                               class="btn btn-default">コースを追加</a>
+                        </div>
+                                                                                    <h4>その他のコース</h4>
+                                                <input type="text" id="search_courses_left" placeholder="検索" class="form-control" />
+                        <br>
+                        <div id="courses_list_left">
+                            <ul class="courseTree courseLevelOne"><li><h4 class='courseTree-levelTitle'>全学</h4><ul class="courseTree courseLevelTwo"><li><div class="title"><h5>全学科・専攻</h5></div><ul class="courseTree courseList" id="%s"><li><div class="course-data-box-normal"><div class='course-title'><a href='/webclass/course.php/b265016/login?acs_=0cefddac' target='_top'>&raquo; 2026年度　春期海外インターンシップ </a><span class='course-info'><SPAN class='dimgray'>&nbsp; &nbsp; 2026 通年 - -&nbsp; </SPAN></span></div></div></li></ul></li><li><div class="title"><h5>[未分類]</h5></div><ul class="courseTree courseList" id="%s"><li><div class="course-data-box-normal"><div class='course-title'><a href='/webclass/course.php/b225116/login?acs_=0cefddac' target='_top'>&raquo; トレーニングルーム機器使用等に関する理解度チェック(世田谷キャンパス) </a><span class='course-info'><SPAN class='dimgray'>&nbsp; &nbsp; 2026 通年 - -&nbsp; </SPAN></span></div></div></li><li><div class="course-data-box-normal"><div class='course-title'><a href='/webclass/course.php/b205026/login?acs_=0cefddac' target='_top'>&raquo; 教学課　手続き用 </a><span class='course-info'><SPAN class='dimgray'>&nbsp; &nbsp; 2026 通年 - -&nbsp; </SPAN></span></div><div class='course-memo' style='background-color:#fff; padding:0.1em 0.2em;'>教学課関連のWeb手続き（履修関係中心）を行うためのコースです。ポータルサイト等で案内された手続きを行う場合は、指定されている教材を実行してください。手続きに関する質問等はWebClass上ではなく各キャンパス教学課に直接問い合わせてください。なお、手続きの完了や申請期間等のスケジュールに応じて、メンバーの登録解除を適宜行う場合があります。</div></div></li></ul></li></ul></li><li><h4 class='courseTree-levelTitle'>世田谷キャンパス</h4><ul class="courseTree courseLevelTwo"><li><div class="title"><h5>全学科・専攻</h5></div><ul class="courseTree courseList" id="%s"><li><div class="course-data-box-normal"><div class='course-title'><a href='/webclass/course.php/b265014/login?acs_=0cefddac' target='_top'>&raquo; 2026年度　世田谷キャンパス　キャリア支援プログラム </a><span class='course-info'><SPAN class='dimgray'>&nbsp; &nbsp; 2026 通年 - -&nbsp; </SPAN></span></div></div></li></ul></li></ul></li><li><h4 class='courseTree-levelTitle'>外国語共通教育センター</h4><ul class="courseTree courseLevelTwo"><li><ul class="courseTree courseList" id="%s"><li><div class="course-data-box-normal"><div class='course-title'><a href='/webclass/course.php/b265022/login?acs_=0cefddac' target='_top'>&raquo; SC対象：外国語選択科目履修申請（2026年度用） </a><span class='course-info'><SPAN class='dimgray'>&nbsp; &nbsp; 2026 通年 - -&nbsp; </SPAN></span></div></div></li></ul></li></ul></li><li><h4 class='courseTree-levelTitle'>情報工学部</h4><ul class="courseTree courseLevelTwo"><li><div class="title"><h5>知能情報工学科</h5></div><ul class="courseTree courseList" id="%s"><li><div class="course-data-box-normal"><div class='course-title'><a href='/webclass/course.php/b265080/login?acs_=0cefddac' target='_top'>&raquo; 知能情報工学科 2026年度3年生 </a><span class='course-info'><SPAN class='dimgray'>&nbsp; &nbsp; 2026 通年 - -&nbsp; </SPAN></span></div><div><SPAN class="course-new-message">新着メッセージ(2)</SPAN></div></div></li></ul></li></ul></li></ul>                        </div>
+                                    </form>
+
+                                    </div>
+    </div>
+        
+</div>
+
+<script>
+    function loadedIframe() {
+        var iframe = document.getElementById('ip-iframe');
+        if (iframe && iframe.contentWindow) {
+
+            var observer = new MutationObserver(function () {
+                adjustIframeHeight();
+            });
+
+            observer.observe(iframe.contentWindow.document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                characterData: true,
+            });
+
+            adjustIframeHeight();
+        }
+    }
+
+    function adjustIframeHeight() {
+        var iframe = document.getElementById('ip-iframe');
+        if (iframe && iframe.contentWindow) {
+            var iframe_height = $(iframe).contents().height() + 'px';
+            $(iframe).attr('height', iframe_height);
+        }
+    }
+
+    $('.showInIframeButton').on('click', function (e) {
+        e.preventDefault();
+
+        var iframe = $('<iframe id="ip-iframe" src="" frameborder="0" scrolling="no" style="width: 1px;min-width: 100%;" onload="loadedIframe()" >')
+            .attr('src', $(this).attr('href'));
+        $('#js-main').empty().append(iframe);
+        adjustIframeHeight();
+
+
+        $('#menu li.active').removeClass('active');
+    });
+
+</script>
+<script class="js-config" type="application/json">{"TOP_URL":"\/webclass\/","language":"JAPANESE","loading_image_url":"\/webclass\/images\/loading.gif"}</script>
+<script class="js-message" type="application/json">{"UNCLASSIFIED":"\u672a\u5206\u985e","NEWMSG":"\u65b0\u7740\u30e1\u30c3\u30bb\u30fc\u30b8","BECAME_DUE":"\u7de0\u5207\u304c\u8fd1\u3044\u8ab2\u984c\u304c\u3042\u308a\u307e\u3059\u3002","NO_COURSES":"\u30b3\u30fc\u30b9\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f","SEARCH":"\u691c\u7d22","PLEASE_SELECT":"\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044","SHOW_ALL_LEVEL":"\u3059\u3079\u3066\u306e\u53c2\u52a0\u53ef\u80fd\u306a\u30b3\u30fc\u30b9\u3092\u8868\u793a"}</script>
+<script src="/webclass/js/pages/top-page--my-page.js?time=1772011383"></script>
+</main>
+<footer class="ft-footer navbar-default">
+    <div class="container text-center">
+                    <p class="ft-footer_message">Powered by WebClass</p>
+            </div>
+</footer>
+<script>
+    $(document).ready(function(){
+        var sessionTimer = 1200000;
+        function updateSession(){
+            var ajaxrequest_updateSession = '/webclass/session.php/keep';
+            $.ajax({
+                url: ajaxrequest_updateSession,
+                data : {
+                },
+                cache : false,
+                type : "GET",
+                success: function(data) {
+
+                }
+            });
+            setTimeout(updateSession, sessionTimer);
+        }
+        updateSession();
+    });
+</script>
+</body>
+</html>

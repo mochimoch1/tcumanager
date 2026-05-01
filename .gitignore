@@ -1,0 +1,12 @@
+# 機密情報（絶対に公開しない）
+service_account.json
+.env
+
+# Pythonのキャッシュなど
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# ローカルのExcelデータ（今後はクラウド管理のため不要）
+*.xlsx
