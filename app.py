@@ -152,8 +152,18 @@ with st.sidebar:
             manager.update_all_data(df)
             st.rerun()
     
-    # ローカル環境でのみ同期ボタンを表示/動作させる
-    if "gcp_service_account" not in st.secrets:
+# 環境判別：クラウド（Streamlit Secrets）が有効か安全にチェック
+    is_cloud = False
+    try:
+        # st.secrets にアクセスを試みて、存在を確認する
+        if "gcp_service_account" in st.secrets:
+            is_cloud = True
+    except (FileNotFoundError, KeyError, Exception):
+        # ファイルがない、またはアクセスできない場合はローカルとみなす
+        is_cloud = False
+
+    # クラウドでなければ（＝ローカル環境なら）同期ボタンを出す
+    if not is_cloud:
         if st.button("WebClass同期 (ローカル専用)", use_container_width=True):
             subprocess.run([sys.executable, MAIN_SCRIPT])
             st.rerun()
