@@ -5,6 +5,7 @@ import sys
 import subprocess
 import time
 from datetime import datetime, timedelta
+from main import AssignmentManager  # 追加: クラウド対応マネージャーの読み込み
 
 # ページ設定
 st.set_page_config(page_title="TCU Mission Control", layout="wide")
@@ -79,23 +80,28 @@ st.markdown("""
 
 # --- 2. データロード & 単位ロジック ---
 base_dir = os.path.dirname(os.path.abspath(__file__))
-ASSIGNMENT_FILE = os.path.join(base_dir, "assignments.xlsx")
 MAIN_SCRIPT = os.path.join(base_dir, "main.py")
 
+# クラウド管理マネージャーの初期化 (ここでローカル/クラウドが自動判別される)
+# "TCU-Mission-Control" はスプレッドシートのファイル名に合わせてください
+manager = AssignmentManager(spreadsheet_name="TCU-Mission-Control")
+
 def get_credit_type(course_name):
-    # 専門科目は2単位、基礎・外国語は1単位
     spec_keywords = ["ヒューマン", "コンピュータ", "情報", "プログラミング", "計算", "アルゴリズム", "AI", "深層学習", "計算工学"]
     for word in spec_keywords:
-        if word in course_name: return "専門 (2単位)"
+        if word in str(course_name): return "専門 (2単位)"
     return "基礎/教養 (1単位)"
 
 def load_data():
-    if os.path.exists(ASSIGNMENT_FILE):
-        df = pd.read_excel(ASSIGNMENT_FILE)
-        df['締切日時'] = pd.to_datetime(df['締切日時'])
+    # Google Sheets からデータを取得
+    df = manager.get_all_data()
+    if not df.empty:
+        # 日付変換（エラーハンドリング付き）
+        df['締切日時'] = pd.to_datetime(df['締切日時'], errors='coerce')
         if 'ステータス' in df.columns:
             df['ステータス'] = df['ステータス'].astype(str).str.strip()
-        df['単位種別'] = df['科目名'].apply(get_credit_type)
+        if '科目名' in df.columns:
+            df['単位種別'] = df['科目名'].apply(get_credit_type)
         return df
     return pd.DataFrame()
 
@@ -111,8 +117,7 @@ with st.sidebar:
     # 検索・絞り込み
     st.subheader("🔍 フィルタリング")
     
-    # 追加: 科目名での絞り込み
-    all_subjects = sorted(df['科目名'].unique().tolist()) if not df.empty else []
+    all_subjects = sorted(df['科目名'].unique().tolist()) if not df.empty and '科目名' in df.columns else []
     subject_filter = st.multiselect("科目名で絞り込み", all_subjects, default=all_subjects)
     
     status_filter = st.multiselect("ステータス", ["未着手", "着手", "完了"], default=["未着手", "着手"])
@@ -130,21 +135,34 @@ with st.sidebar:
     
     # Keep Gate & Sync
     st.subheader("📥 Keep Gate")
-    keep_input = st.text_area("メモ追加", height=80, placeholder="例: 生チョコの材料を買う")
+    keep_input = st.text_area("メモ追加", height=80, placeholder="例: Python環境構築")
     if st.button("Add Mission", use_container_width=True):
         if keep_input:
-            new_row = {"科目名": "Keep", "課題内容": keep_input, "締切日時": datetime.now(), "成績重み(%)": 0, "ステータス": "未着手", "優先スコア": 0}
+            new_row = {
+                "科目名": "Keep", 
+                "課題内容": keep_input, 
+                "締切日時": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+                "成績重み(%)": 0, 
+                "ステータス": "未着手", 
+                "優先スコア": 0,
+                "提出先": ""
+            }
+            # 新しい行をDFに追加して全更新 (簡易版)
             df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-            df.to_excel(ASSIGNMENT_FILE, index=False); st.rerun()
+            manager.update_all_data(df)
+            st.rerun()
     
-    if st.button("WebClass同期", use_container_width=True):
-        subprocess.run([sys.executable, MAIN_SCRIPT]); st.rerun()
+    # ローカル環境でのみ同期ボタンを表示/動作させる
+    if "gcp_service_account" not in st.secrets:
+        if st.button("WebClass同期 (ローカル専用)", use_container_width=True):
+            subprocess.run([sys.executable, MAIN_SCRIPT])
+            st.rerun()
 
 # --- 4. メインボード ---
 st.title("🛡️ Mission Control")
 col_h1, col_h2 = st.columns([2, 1])
 with col_h1:
-    st.info(f"📍 竹原 洸希 隊員、バイト出撃（21:00〜01:00）お疲れ様でした。深夜の戦績を確認せよ。")
+    st.info(f"📍 竹原 洸希 隊員、データ同期完了。現在の戦績を確認せよ。")
 
 with col_h2:
     if not df.empty:
@@ -161,8 +179,9 @@ st.divider()
 if not df.empty:
     # フィルタ適用
     display_df = df[df['ステータス'].isin(status_filter)]
-    display_df = display_df[display_df['単位種別'].isin(credit_filter)]
-    display_df = display_df[display_df['科目名'].isin(subject_filter)] # 科目フィルタ
+    if '単位種別' in display_df.columns:
+        display_df = display_df[display_df['単位種別'].isin(credit_filter)]
+    display_df = display_df[display_df['科目名'].isin(subject_filter)]
     
     # ソート適用
     display_df = display_df.sort_values(by=sort_on, ascending=ascending)
@@ -177,29 +196,43 @@ if not df.empty:
                     is_done = (row['ステータス'] == '完了')
                     is_tearing = (st.session_state.tear_id == idx)
                     
-                    aura = "aura-specialized" if "専門" in row['単位種別'] else "aura-foundation"
-                    p_class = "priority-done" if is_done else ("priority-high" if row['優先スコア'] > 100 else "priority-mid")
+                    unit_type = row.get('単位種別', '')
+                    aura = "aura-specialized" if "専門" in str(unit_type) else "aura-foundation"
                     
+                    try:
+                        score = float(row.get('優先スコア', 0))
+                    except:
+                        score = 0
+                    p_class = "priority-done" if is_done else ("priority-high" if score > 100 else "priority-mid")
+                    
+                    dt = row['締切日時']
+                    dt_str = dt.strftime('%m/%d %H:%M') if pd.notnull(dt) else "未設定"
+                    weight = row.get('成績重み(%)', 0)
+                    weight_val = int(weight) if pd.notnull(weight) and str(weight).replace('.','',1).isdigit() else 0
+
                     st.markdown(f"""
                     <div class="mission-card {p_class} {aura if not is_done else ''} {'tear-top' if is_tearing else ''}">
                         <div>
                             <div style="display: flex; justify-content: space-between;">
                                 <span class="status-badge">{row['科目名']}</span>
-                                <span style="color: #fdcb6e; font-size: 0.8rem;">{int(row['成績重み(%)'])}%</span>
+                                <span style="color: #fdcb6e; font-size: 0.8rem;">{weight_val}%</span>
                             </div>
                             <div class="mission-title">{row['課題内容']}</div>
                         </div>
-                        <div style="font-size: 0.8rem; opacity: 0.6; margin-top: auto;">⏰ {row['締切日時'].strftime('%m/%d %H:%M')}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.6; margin-top: auto;">⏰ {dt_str}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     
                     if is_done:
                         if st.button("↺ UNDO", key=f"u_{idx}", use_container_width=True):
-                            df.at[idx, 'ステータス'] = '未着手'; df.to_excel(ASSIGNMENT_FILE, index=False); st.rerun()
+                            df.at[idx, 'ステータス'] = '未着手'
+                            manager.update_all_data(df)
+                            st.rerun()
                     else:
                         st.markdown(f'<div class="{"tear-bottom" if is_tearing else ""}">', unsafe_allow_html=True)
                         if st.button("COMPLETE", key=f"d_{idx}", use_container_width=True):
-                            st.session_state.tear_id = idx; st.rerun()
+                            st.session_state.tear_id = idx
+                            st.rerun()
                         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning("指定されたフィルタに一致する任務はありません。")
@@ -207,5 +240,9 @@ if not df.empty:
 # --- 6. アニメーション同期 ---
 if st.session_state.tear_id is not None:
     target = st.session_state.tear_id
-    df.at[target, 'ステータス'] = '完了'; df.to_excel(ASSIGNMENT_FILE, index=False)
-    time.sleep(0.7); st.session_state.tear_id = None; st.balloons(); st.rerun()
+    df.at[target, 'ステータス'] = '完了'
+    manager.update_all_data(df)
+    time.sleep(0.7)
+    st.session_state.tear_id = None
+    st.balloons()
+    st.rerun()
