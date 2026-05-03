@@ -7,6 +7,8 @@ __pycache__/
 *.pyc
 .venv/
 env/
+browser_data/
+
 
 # ローカルのExcelデータ（今後はクラウド管理のため不要）
 *.xlsx
