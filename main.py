@@ -16,12 +16,16 @@ class AssignmentManager:
             'https://www.googleapis.com/auth/drive'
         ]
         
-        # --- 環境判別ロジック ---
-        if "gcp_service_account" in st.secrets:
-            # クラウド環境：Streamlit Secrets から読み込み
-            creds_info = dict(st.secrets["gcp_service_account"])
-            self.creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, self.scope)
-        else:
+# --- 環境判別ロジック ---
+        # st.secrets が存在し、かつ "gcp_service_account" キーがあるか安全に確認する
+        try:
+            if "gcp_service_account" in st.secrets:
+                # クラウド環境：Streamlit Secrets から読み込み
+                creds_info = dict(st.secrets["gcp_service_account"])
+                self.creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, self.scope)
+            else:
+                raise KeyError
+        except (FileNotFoundError, KeyError):
             # ローカル環境：ローカルの JSON ファイルから読み込み
             json_path = os.path.join(os.path.dirname(__file__), 'service_account.json')
             self.creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, self.scope)
@@ -37,13 +41,21 @@ class AssignmentManager:
 
     def update_all_data(self, df):
         """DataFrame でスプレッドシート全体を上書き更新する"""
-        # NaNを空文字に変換
-        df_filled = df.fillna("")
-        # ヘッダーとデータをリスト形式に変換
-        data_to_update = [df_filled.columns.values.tolist()] + df_filled.values.tolist()
+        # 1. 全てのデータを文字列に変換し、エラーの元（日付型やNaN）を無害化する
+        df_safe = df.fillna("").astype(str).replace('NaT', '')
+        
+        # 2. ヘッダーとデータをリスト形式に変換
+        data_to_update = [df_safe.columns.values.tolist()] + df_safe.values.tolist()
+        
+        # 3. シートを初期化
         self.sheet.clear()
-        self.sheet.update('A1', data_to_update)
-
+        
+        # 4. ライブラリのバージョン違いによるエラーを防ぐ安全な書き込み
+        try:
+            self.sheet.update(values=data_to_update, range_name='A1')
+        except TypeError:
+            # 古いバージョンのgspread環境用
+            self.sheet.update('A1', data_to_update)
     def update_row(self, row_index, updated_row_dict):
         """特定の行だけを更新（パフォーマンス向上用）"""
         # スプレッドシートは1始まりでヘッダーがあるため +2
