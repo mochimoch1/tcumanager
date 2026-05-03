@@ -84,7 +84,7 @@ MAIN_SCRIPT = os.path.join(base_dir, "main.py")
 
 # クラウド管理マネージャーの初期化 (ここでローカル/クラウドが自動判別される)
 # "TCU-Mission-Control" はスプレッドシートのファイル名に合わせてください
-manager = AssignmentManager(spreadsheet_name="TCU-Mission-Control")
+manager = AssignmentManager(spreadsheet_name="to the top")
 
 def get_credit_type(course_name):
     spec_keywords = ["ヒューマン", "コンピュータ", "情報", "プログラミング", "計算", "アルゴリズム", "AI", "深層学習", "計算工学"]
