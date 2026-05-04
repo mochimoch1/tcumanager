@@ -1,25 +1,44 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 import os
 import sys
 import subprocess
 import time
-from datetime import datetime, timedelta
-from main import AssignmentManager  # 追加: クラウド対応マネージャーの読み込み
+from main import AssignmentManager
 
 # ページ設定
 st.set_page_config(page_title="TCU Mission Control", layout="wide")
 
-# --- 1. デザイン定義 (シネマ演出 & 物理サイズ死守) ---
+# --- 1. デザイン定義（達成度ゲージ & 難易度バッジ追加） ---
 st.markdown("""
 <style>
     .stApp { background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%); }
     
-    /* 物理サイズ固定 (320px * 200px 黄金比) */
-    [data-testid="stHorizontalBlock"] { gap: 15px !important; margin-bottom: 25px; }
-    [data-testid="column"] { min-width: 320px !important; max-width: 320px !important; flex: 0 0 320px !important; }
+    /* 達成度プログレスバーの外枠 */
+    .progress-container {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        height: 24px;
+        width: 100%;
+        margin-bottom: 25px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    /* 達成度プログレスバーの中身 */
+    .progress-bar {
+        background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+        height: 100%;
+        transition: width 0.5s ease-in-out;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.8rem;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
 
-    /* チケット風カード本体 */
     .mission-card {
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(15px);
@@ -27,63 +46,20 @@ st.markdown("""
         padding: 20px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-bottom: 2px dashed rgba(255, 255, 255, 0.2);
-        height: 180px;
+        height: 200px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        position: relative;
-        transition: 0.4s;
     }
-
-    /* 分断アニメーション */
-    @keyframes ticket-tear-top {
-        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-        100% { transform: translateY(-150px) rotate(-8deg); opacity: 0; filter: blur(10px); }
-    }
-    .tear-top { animation: ticket-tear-top 0.7s forwards ease-in; }
-
-    @keyframes ticket-tear-bottom {
-        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-        100% { transform: translateY(150px) rotate(8deg); opacity: 0; filter: blur(10px); }
-    }
-    .tear-bottom > div > button { animation: ticket-tear-bottom 0.7s forwards ease-in !important; pointer-events: none; }
-
-    /* ボタン演出：シマー & プレス */
-    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-    .stButton > button {
-        border-radius: 0 0 15px 15px !important;
-        background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 100%) !important;
-        background-size: 200% 100% !important;
-        height: 45px !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        font-weight: bold !important;
-        color: #eee !important;
-        transition: 0.2s !important;
-    }
-    .stButton > button:hover { animation: shimmer 1.5s infinite; color: #55efc4 !important; border-color: rgba(85, 239, 196, 0.5) !important; }
-    .stButton > button:active { transform: scale(0.96) translateY(2px) !important; background: rgba(85, 239, 196, 0.3) !important; }
-
-    /* 単位数連動オーラ (専門2単位:紫 / 基礎1単位:緑) */
-    .aura-specialized { box-shadow: 0 0 20px rgba(108, 92, 231, 0.4); border-left: 5px solid #6c5ce7; }
-    .aura-foundation { box-shadow: 0 0 20px rgba(85, 239, 196, 0.3); border-left: 5px solid #55efc4; }
-
-    /* 状態別カラー */
-    .priority-high { border-top: 6px solid #ff7675; }
-    .priority-mid { border-top: 6px solid #fdcb6e; }
-    .priority-low { border-top: 6px solid #55efc4; }
-    .priority-done { border-top: 6px solid #888; opacity: 0.4; filter: grayscale(1); }
-
-    .mission-title { font-weight: bold; font-size: 1.1rem; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-    .status-badge { font-size: 0.7rem; background: rgba(255,255,255,0.15); padding: 3px 10px; border-radius: 12px; color: #fdcb6e; }
+    .aura-specialized { border-left: 5px solid #6c5ce7; box-shadow: 0 0 15px rgba(108, 92, 231, 0.3); }
+    .aura-foundation { border-left: 5px solid #55efc4; box-shadow: 0 0 15px rgba(85, 239, 196, 0.2); }
+    .status-badge { font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; color: #fdcb6e; }
+    .difficulty-stars { color: #fab1a0; font-size: 0.8rem; margin-top: 5px; }
+    .stButton > button { border-radius: 0 0 15px 15px !important; height: 40px !important; font-weight: bold !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. データロード & 単位ロジック ---
-base_dir = os.path.dirname(os.path.abspath(__file__))
-MAIN_SCRIPT = os.path.join(base_dir, "main.py")
-
-# クラウド管理マネージャーの初期化 (ここでローカル/クラウドが自動判別される)
-# "TCU-Mission-Control" はスプレッドシートのファイル名に合わせてください
+# --- 2. データ初期化 ---
 manager = AssignmentManager(spreadsheet_name="to the top")
 
 def get_credit_type(course_name):
@@ -92,167 +68,133 @@ def get_credit_type(course_name):
         if word in str(course_name): return "専門 (2単位)"
     return "基礎/教養 (1単位)"
 
-def load_data():
-    # Google Sheets からデータを取得
-    df = manager.get_all_data()
-    if not df.empty:
-        # 日付変換（エラーハンドリング付き）
-        df['締切日時'] = pd.to_datetime(df['締切日時'], errors='coerce')
-        if 'ステータス' in df.columns:
-            df['ステータス'] = df['ステータス'].astype(str).str.strip()
-        if '科目名' in df.columns:
+if 'master_df' not in st.session_state:
+    with st.spinner("データをロード中..."):
+        df = manager.get_all_data()
+        if not df.empty:
+            df['締切日時'] = pd.to_datetime(df['締切日時'], errors='coerce')
             df['単位種別'] = df['科目名'].apply(get_credit_type)
-        return df
-    return pd.DataFrame()
+            # 難易度が未設定の場合は「1」にする
+            if '難易度' not in df.columns: df['難易度'] = 1
+            df['難易度'] = df['難易度'].fillna(1)
+        st.session_state.master_df = df
 
-df = load_data()
+if 'pending_indices' not in st.session_state:
+    st.session_state.pending_indices = set()
 
-# --- 3. サイドバー：戦術フィルタリング & ソート ---
-if "tear_id" not in st.session_state:
-    st.session_state.tear_id = None
-
+# --- 3. サイドバー (Console) ---
 with st.sidebar:
     st.title("⚙️ Tactical Console")
     
-    # 検索・絞り込み
-    st.subheader("🔍 フィルタリング")
-    
-    all_subjects = sorted(df['科目名'].unique().tolist()) if not df.empty and '科目名' in df.columns else []
-    subject_filter = st.multiselect("科目名で絞り込み", all_subjects, default=all_subjects)
-    
-    status_filter = st.multiselect("ステータス", ["未着手", "着手", "完了"], default=["未着手", "着手"])
-    credit_filter = st.multiselect("単位種別", ["専門 (2単位)", "基礎/教養 (1単位)"], default=["専門 (2単位)", "基礎/教養 (1単位)"])
-    
-    st.divider()
-    
-    # 並び替え
-    st.subheader("🔃 並び替え")
-    sort_on = st.selectbox("ソート基準", ["優先スコア", "締切日時", "成績重み(%)", "科目名"])
-    sort_order = st.radio("順序", ["降順 (高/遠)", "昇順 (低/近)"], horizontal=True)
-    ascending = (sort_order == "昇順 (低/近)")
-
-    st.divider()
-    
-    # Keep Gate & Sync
-    st.subheader("📥 Keep Gate")
-    keep_input = st.text_area("メモ追加", height=80, placeholder="例: Python環境構築")
-    if st.button("Add Mission", use_container_width=True):
-        if keep_input:
-            new_row = {
-                "科目名": "Keep", 
-                "課題内容": keep_input, 
-                "締切日時": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
-                "成績重み(%)": 0, 
-                "ステータス": "未着手", 
-                "優先スコア": 0,
-                "提出先": ""
-            }
-            # 新しい行をDFに追加して全更新 (簡易版)
-            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-            manager.update_all_data(df)
+    # 保存ボタン
+    if st.session_state.pending_indices:
+        st.error(f"⚠️ {len(st.session_state.pending_indices)} 件を保存してください")
+        if st.button("🚀 クラウドに保存", type="primary", use_container_width=True):
+            manager.update_all_data(st.session_state.master_df)
+            st.session_state.pending_indices.clear()
+            st.toast("☁️ 同期完了")
             st.rerun()
     
-# 環境判別：クラウド（Streamlit Secrets）が有効か安全にチェック
+    st.divider()
+
+    # フィルタ
+    all_subjects = sorted(st.session_state.master_df['科目名'].unique().tolist()) if not st.session_state.master_df.empty else []
+    subject_filter = st.multiselect("科目名", all_subjects, default=all_subjects)
+    status_filter = st.multiselect("ステータス", ["未着手", "着手", "完了"], default=["未着手", "着手"])
+    
+    st.divider()
+
+    # 並び替え（ソート）機能強化
+    sort_on = st.selectbox("並び替え基準", ["優先スコア", "締切日時", "難易度", "科目名"])
+    sort_order = st.radio("順序", ["昇順 (低/近/A-Z)", "降順 (高/遠/Z-A)"], horizontal=True)
+    is_ascending = (sort_order == "昇順 (低/近/A-Z)")
+
+    st.divider()
+
+    # WebClass同期ボタン
     is_cloud = False
     try:
-        # st.secrets にアクセスを試みて、存在を確認する
-        if "gcp_service_account" in st.secrets:
-            is_cloud = True
-    except (FileNotFoundError, KeyError, Exception):
-        # ファイルがない、またはアクセスできない場合はローカルとみなす
-        is_cloud = False
-
-    # クラウドでなければ（＝ローカル環境なら）同期ボタンを出す
+        if "gcp_service_account" in st.secrets: is_cloud = True
+    except: pass
     if not is_cloud:
-        if st.button("WebClass同期 (ローカル専用)", use_container_width=True):
-            subprocess.run([sys.executable, MAIN_SCRIPT])
+        if st.button("📥 WebClass 同期 (Local)", use_container_width=True):
+            subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "main.py")])
+            del st.session_state.master_df
             st.rerun()
 
-# --- 4. メインボード ---
+# --- 4. メインボード描画 (達成度表示含む) ---
 st.title("🛡️ Mission Control")
-col_h1, col_h2 = st.columns([2, 1])
-with col_h1:
-    st.info(f"📍 竹原 洸希 隊員、データ同期完了。現在の戦績を確認せよ。")
 
-with col_h2:
-    if not df.empty:
-        done = len(df[df['ステータス'] == '完了'])
-        total = len(df)
-        progress = done / total if total > 0 else 0
-        rank = 'S' if progress >= 0.9 else 'A' if progress >= 0.7 else 'B'
-        st.markdown(f"<div style='text-align:center;'><small>RANK</small><br><b style='font-size:2.8rem; color:#fdcb6e; text-shadow: 0 0 15px #fdcb6e;'>{rank}</b><br><small>達成率: {progress*100:.1f}%</small></div>", unsafe_allow_html=True)
-        st.progress(progress)
+@st.fragment
+def render_mission_board():
+    df = st.session_state.master_df
+    if df.empty: return
 
-st.divider()
+    # --- 達成度計算 ---
+    total_tasks = len(df)
+    completed_tasks = len(df[df['ステータス'] == '完了'])
+    achievement_rate = int((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 0
 
-# --- 5. フィルタ・ソート適用後の描画 ---
-if not df.empty:
-    # フィルタ適用
-    display_df = df[df['ステータス'].isin(status_filter)]
-    if '単位種別' in display_df.columns:
-        display_df = display_df[display_df['単位種別'].isin(credit_filter)]
-    display_df = display_df[display_df['科目名'].isin(subject_filter)]
-    
-    # ソート適用
-    display_df = display_df.sort_values(by=sort_on, ascending=ascending)
+    # 達成度ゲージの表示
+    st.markdown(f"""
+    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #eee;">
+        <span>🏆 Total Achievement</span>
+        <span>{achievement_rate}% ({completed_tasks}/{total_tasks})</span>
+    </div>
+    <div class="progress-container">
+        <div class="progress-bar" style="width: {achievement_rate}%;">{"DONE!" if achievement_rate == 100 else ""}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # 1行6枚表示
-    if not display_df.empty:
-        chunks = [display_df.iloc[i:i + 6] for i in range(0, len(display_df), 6)]
-        for chunk in chunks:
-            cols = st.columns(6)
-            for i, (idx, row) in enumerate(chunk.iterrows()):
-                with cols[i]:
-                    is_done = (row['ステータス'] == '完了')
-                    is_tearing = (st.session_state.tear_id == idx)
-                    
-                    unit_type = row.get('単位種別', '')
-                    aura = "aura-specialized" if "専門" in str(unit_type) else "aura-foundation"
-                    
-                    try:
-                        score = float(row.get('優先スコア', 0))
-                    except:
-                        score = 0
-                    p_class = "priority-done" if is_done else ("priority-high" if score > 100 else "priority-mid")
-                    
-                    dt = row['締切日時']
-                    dt_str = dt.strftime('%m/%d %H:%M') if pd.notnull(dt) else "未設定"
-                    weight = row.get('成績重み(%)', 0)
-                    weight_val = int(weight) if pd.notnull(weight) and str(weight).replace('.','',1).isdigit() else 0
+    # フィルタリング
+    display_df = df[
+        (df['ステータス'].isin(status_filter)) &
+        (df['科目名'].isin(subject_filter))
+    ]
 
-                    st.markdown(f"""
-                    <div class="mission-card {p_class} {aura if not is_done else ''} {'tear-top' if is_tearing else ''}">
-                        <div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span class="status-badge">{row['科目名']}</span>
-                                <span style="color: #fdcb6e; font-size: 0.8rem;">{weight_val}%</span>
-                            </div>
-                            <div class="mission-title">{row['課題内容']}</div>
-                        </div>
-                        <div style="font-size: 0.8rem; opacity: 0.6; margin-top: auto;">⏰ {dt_str}</div>
+    # 並び替え
+    display_df = display_df.sort_values(by=sort_on, ascending=is_ascending)
+
+    if display_df.empty:
+        st.info("表示するミッションがありません。")
+        return
+
+    # 6列描画
+    chunks = [display_df.iloc[i:i + 6] for i in range(0, len(display_df), 6)]
+    for chunk in chunks:
+        cols = st.columns(6)
+        for i, (idx, row) in enumerate(chunk.iterrows()):
+            with cols[i]:
+                aura = "aura-specialized" if "専門" in str(row['単位種別']) else "aura-foundation"
+                is_done = (row['ステータス'] == '完了')
+                
+                # 難易度を★で表示
+                try:
+                    diff_val = int(row['難易度'])
+                    stars = "⚡" * diff_val
+                except:
+                    stars = "⚡"
+
+                st.markdown(f"""
+                <div class="mission-card {aura if not is_done else ''}" style="{ 'opacity:0.4; filter:grayscale(1);' if is_done else '' }">
+                    <div>
+                        <div class="status-badge">{row['科目名']}</div>
+                        <div style="color:white; font-weight:bold; margin-top:10px; font-size:0.95rem;">{row['課題内容']}</div>
+                        <div class="difficulty-stars">Rank: {stars}</div>
                     </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if is_done:
-                        if st.button("↺ UNDO", key=f"u_{idx}", use_container_width=True):
-                            df.at[idx, 'ステータス'] = '未着手'
-                            manager.update_all_data(df)
-                            st.rerun()
-                    else:
-                        st.markdown(f'<div class="{"tear-bottom" if is_tearing else ""}">', unsafe_allow_html=True)
-                        if st.button("COMPLETE", key=f"d_{idx}", use_container_width=True):
-                            st.session_state.tear_id = idx
-                            st.rerun()
-                        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.warning("指定されたフィルタに一致する任務はありません。")
+                    <div style="font-size:0.75rem; color:#aaa; margin-top:auto;">⏰ {row['締切日時'].strftime('%m/%d %H:%M') if pd.notnull(row['締切日時']) else '未定'}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if not is_done:
+                    if st.button("COMPLETE", key=f"btn_d_{idx}", use_container_width=True):
+                        st.session_state.master_df.at[idx, 'ステータス'] = '完了'
+                        st.session_state.pending_indices.add(idx)
+                        st.rerun(scope="fragment") # バーとリストを即時更新
+                else:
+                    if st.button("↺ UNDO", key=f"btn_u_{idx}", use_container_width=True):
+                        st.session_state.master_df.at[idx, 'ステータス'] = '未着手'
+                        st.session_state.pending_indices.add(idx)
+                        st.rerun(scope="fragment")
 
-# --- 6. アニメーション同期 ---
-if st.session_state.tear_id is not None:
-    target = st.session_state.tear_id
-    df.at[target, 'ステータス'] = '完了'
-    manager.update_all_data(df)
-    time.sleep(0.7)
-    st.session_state.tear_id = None
-    st.balloons()
-    st.rerun()
+render_mission_board()
