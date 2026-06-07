@@ -31,20 +31,18 @@ class AssignmentManager:
     LINE通知フラグや優先度スコアを保持したまま高速に動作する。
     """
     def __init__(self, spreadsheet_name="to the top"):
-        # カラム定義（オリジナルの構成を維持）
-        self.cols = ["24h通知済", "3h通知済", "科目名", "課題内容", "締切日時", "成績重み(%)", "見積もり工数(h)", "ステータス", "優先スコア"]
+        # "難易度" を含むすべての列を定義
+        self.cols = ["24h通知済", "3h通知済", "科目名", "課題内容", "締切日時", "成績重み(%)", "見積もり工数(h)", "ステータス", "優先スコア", "難易度"]
         self.scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+        self.sheet = None  # 初期値としてNoneを設定（クラッシュ防止）
         
-        # --- 🛡️ ハイブリッド認証ロジック ---
         try:
             if "gcp_service_account" in st.secrets:
-                # クラウド環境：Streamlit Secrets から読み込み
                 creds_info = dict(st.secrets["gcp_service_account"])
                 self.creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, self.scope)
             else:
                 raise KeyError
         except (FileNotFoundError, KeyError, Exception):
-            # ローカル環境：プロジェクト直下の json ファイルを使用
             json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'service_account.json')
             if os.path.exists(json_path):
                 self.creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, self.scope)
@@ -53,43 +51,86 @@ class AssignmentManager:
                 print("❌ 認証ファイルが見つかりません。")
 
         if self.creds:
-            self.client = gspread.authorize(self.creds)
-            try:
-                self.sheet = self.client.open(spreadsheet_name).get_worksheet(0)
-                self._ensure_columns()
-            except Exception as e:
-                print(f"❌ スプレッドシート接続エラー: {e}")
+            # APIエラー対策付きの接続トライ
+            for attempt in range(3):
+                try:
+                    self.client = gspread.authorize(self.creds)
+                    self.spreadsheet = self.client.open(spreadsheet_name)
+                    self.sheet = self.spreadsheet.get_worksheet(0)
+                    self._ensure_columns()
+                    break # 成功したらループを抜ける
+                except gspread.exceptions.APIError as e:
+                    if "429" in str(e) and attempt < 2:
+                        print(f"⚠️ API制限中... {attempt + 1}回目の再試行まで5秒待機します...")
+                        time.sleep(5)
+                    else:
+                        print(f"❌ スプレッドシート接続エラー: {e}")
+                except Exception as e:
+                    print(f"❌ 予期せぬ接続エラー: {e}")
+                    break
 
     def _ensure_columns(self):
         """1行目のヘッダーが存在するか確認し、なければ作成する"""
+        if self.sheet is None: return
         header = self.sheet.row_values(1)
         if not header:
             self.sheet.insert_row(self.cols, 1)
 
     def get_all_data(self):
-        data = self.sheet.get_all_records()
+        """全データを取得（API制限対策・列の自動補完ガード付き）"""
+        if self.sheet is None:
+            print("⚠️ シートに接続されていないため、データを読み込めません。")
+            return pd.DataFrame(columns=self.cols)
+
+        data = []
+        for attempt in range(3):
+            try:
+                data = self.sheet.get_all_records()
+                break
+            except gspread.exceptions.APIError as e:
+                if "429" in str(e) and attempt < 2:
+                    print(f"⚠️ 読み込み制限発生。{5 * (attempt + 1)}秒待機して再試行します...")
+                    time.sleep(5 * (attempt + 1))
+                else:
+                    print(f"❌ データ取得失敗（APIエラー）: {e}")
+                    return pd.DataFrame(columns=self.cols)
+
         df = pd.DataFrame(data)
+        
+        # データの整形と列の自動補完
         if not df.empty:
-            # 一旦文字列として保持し、変換に成功したものだけ上書きする
+            # 【重要】スプレッドシート側に列が存在しない場合の自動補完
+            for col in self.cols:
+                if col not in df.columns:
+                    df[col] = 1 if col == "難易度" else ""
+
             raw_deadlines = df['締切日時'].copy()
             df['締切日時'] = pd.to_datetime(df['締切日時'], errors='coerce')
-            # 解析失敗(NaT)した場所は、元の文字列を戻す
             df['締切日時'] = df['締切日時'].fillna(raw_deadlines)
             
             df['科目名'] = df['科目名'].astype(str).str.strip()
             df['課題内容'] = df['課題内容'].astype(str).str.strip()
             if 'ステータス' in df.columns:
                 df['ステータス'] = df['ステータス'].astype(str).str.strip()
+        else:
+            df = pd.DataFrame(columns=self.cols)
+            
         return df
 
     def update_all_data(self, df):
         """全データを安全に一括上書き（データ消失防止版）"""
+        if self.sheet is None: return
+        
         temp_df = df.copy()
-        # Google Sheets に送れる形式（文字列）に変換
+        
+        # 列の補完（書き込み前にもう一度確認）
+        for col in self.cols:
+            if col not in temp_df.columns:
+                temp_df[col] = 1 if col == "難易度" else ""
+
         if '締切日時' in temp_df.columns:
             temp_df['締切日時'] = temp_df['締切日時'].dt.strftime('%Y-%m-%d %H:%M:%S')
         
-        # NaN や NaT を空文字に置換し、型を文字列に統一
         df_safe = temp_df[self.cols].fillna('').astype(str).replace('NaT', '')
         data_to_write = [self.cols] + df_safe.values.tolist()
         
@@ -99,28 +140,19 @@ class AssignmentManager:
         except TypeError:
             self.sheet.update('A1', data_to_write)
 
-    def update_single_cell(self, row_index, column_name, new_value):
-        """【高速版】特定のセルのみをピンポイントで更新する（完了ボタン等で使用）"""
-        try:
-            if column_name not in self.cols: return False
-            col_idx = self.cols.index(column_name) + 1
-            actual_row = int(row_index) + 2 # インデックス0始まり + ヘッダー分1
-            self.sheet.update_cell(actual_row, col_idx, str(new_value))
-            return True
-        except Exception as e:
-            print(f"⚠️ 高速更新失敗: {e}")
-            return False
-
-    def is_duplicate(self, new_item):
-        """既存の課題と重複していないか確認"""
-        df = self.get_all_data()
-        if df.empty: return False
+    def is_duplicate(self, new_item, existing_df):
+        """
+        【重要】既存の課題と重複していないか確認（API通信なし・メモリ比較）
+        """
+        if existing_df.empty: return False
         new_subject = str(new_item.get('科目名', '')).strip()
         new_content = str(new_item.get('課題内容', '')).strip()
-        match = df[(df['科目名'] == new_subject) & (df['課題内容'] == new_content)]
+        match = existing_df[(existing_df['科目名'] == new_subject) & (existing_df['課題内容'] == new_content)]
         return not match.empty
 
     def add_assignment(self, data_dict):
+        """単一行の追加"""
+        if self.sheet is None: return
         row_data = []
         for col in self.cols:
             if col in data_dict:
@@ -130,24 +162,36 @@ class AssignmentManager:
             elif any(x in col for x in ["重み", "工数", "スコア"]):
                 row_data.append(0)
             elif col == "締切日時":
-                row_data.append("") # 締切がない場合は空文字にする
+                row_data.append("")
+            elif col == "難易度":
+                row_data.append(1)
             else:
                 row_data.append("未着手")
         self.sheet.append_row([str(x) for x in row_data])
 
     def sync_with_latest_data(self, latest_assignments):
-        """WebClassから消えた未着手課題を自動的に完了にする"""
+        """
+        WebClassから取得した最新データと同期する。
+        【重要】今回取得した『科目』に含まれる課題のみ、自動完了の判定対象にする。
+        """
         if not latest_assignments: return
         df = self.get_all_data()
         if df.empty: return
-        
+
+        # 今回スクレイピングを実行した科目のリストを作成（手動メモなどを除外するため）
+        scraped_subjects = set(str(item['科目名']).strip() for item in latest_assignments)
         latest_set = set((str(item['科目名']).strip(), str(item['課題内容']).strip()) for item in latest_assignments)
+        
         updated = False
         for index, row in df.iterrows():
+            subj = str(row['科目名']).strip()
+            
             if row['ステータス'] == '未着手':
-                if (row['科目名'], row['課題内容']) not in latest_set:
-                    df.at[index, 'ステータス'] = '完了'
-                    updated = True
+                if subj in scraped_subjects:
+                    if (subj, str(row['課題内容']).strip()) not in latest_set:
+                        df.at[index, 'ステータス'] = '完了'
+                        updated = True
+                        
         if updated:
             self.update_all_data(df)
 
@@ -170,7 +214,7 @@ class AssignmentManager:
                 
             rem_h = (row['締切日時'] - now).total_seconds() / 3600
             
-            # 優先スコア計算ロジック（オリジナルのまま）
+            # 優先スコア計算
             row['優先スコア'] = (row['成績重み(%)'] * row['見積もり工数(h)']) / rem_h if rem_h > 0 else 999
             
             # 通知判定
@@ -195,20 +239,26 @@ def main():
     manager = AssignmentManager(spreadsheet_name="to the top")
     
     print("📡 WebClassから情報を取得中...")
-    # scraper.py の get_webclass_data を実行
     new_assignments, course_list = get_webclass_data()
     
-    # 既存課題との同期（消えた課題を完了にする）
+    # 既存課題との同期（消えた課題を完了にする、手動追加は保護する）
     manager.sync_with_latest_data(new_assignments)
 
+    # --- 🚀 APIスパム回避策 ---
+    # ループの前に「現在のデータ」を1回だけ取得しておく
+    existing_df = manager.get_all_data()
     added_count = 0
+    
     for item in new_assignments:
         item['科目名'] = str(item.get('科目名', '')).strip()
         item['課題内容'] = str(item.get('課題内容', '')).strip()
         
-        if not manager.is_duplicate(item):
+        # 取得しておいた existing_df を渡して判定（API通信ゼロ）
+        if not manager.is_duplicate(item, existing_df):
             manager.add_assignment(item)
             added_count += 1
+            # 重複登録を防ぐため、ローカルの existing_df にも追加しておく
+            existing_df = pd.concat([existing_df, pd.DataFrame([item])], ignore_index=True)
     
     print(f"✅ {added_count}件の新規課題を追加。スコア更新中...")
     incomplete_tasks, alert_messages = manager.process_and_get_notifications()

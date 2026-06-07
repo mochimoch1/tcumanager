@@ -95,6 +95,57 @@ if 'pending_indices' not in st.session_state:
 # --- 3. サイドバー (Console) ---
 with st.sidebar:
     st.title("⚙️ Tactical Console")
+    # --- 📥 新規タスク手動追加 (Manual Mission) ---
+    st.subheader("📝 Manual Entry")
+    with st.popover("➕ 新規タスクを発行", use_container_width=True):
+        st.markdown("### 📋 任務詳細を入力せよ")
+        
+        with st.form("manual_task_form", clear_on_submit=True):
+            f_subject = st.text_input("科目名 / カテゴリ", value="自主学習")
+            f_content = st.text_input("タスク内容 (必須)")
+            
+            col_date, col_time = st.columns(2)
+            f_date = col_date.date_input("締切日", datetime.now())
+            f_time = col_time.time_input("時刻", datetime.now().replace(hour=23, minute=59))
+            
+            f_diff = st.slider("難易度 (Rank)", 1, 5, 3)
+            f_weight = st.number_input("成績重み / 重要度 (%)", 0, 100, 0)
+
+            submit_manual = st.form_submit_button("掲示板に貼り出す")
+
+            if submit_manual:
+                if f_content:
+                    # 締切日時の結合
+                    f_deadline = datetime.combine(f_date, f_time)
+                    
+                    # 新規行データの作成
+                    new_task = {
+                        "24h通知済": False, "3h通知済": False,
+                        "科目名": f_subject,
+                        "課題内容": f_content,
+                        "締切日時": f_deadline,
+                        "成績重み(%)": f_weight,
+                        "見積もり工数(h)": 1,
+                        "ステータス": "未着手",
+                        "優先スコア": 0,
+                        "難易度": f_diff
+                    }
+                    
+                    # セッション内のマスターデータを更新 (メモリ上のエクセルを更新する感覚)
+                    st.session_state.master_df = pd.concat([
+                        st.session_state.master_df, 
+                        pd.DataFrame([new_task])
+                    ], ignore_index=True)
+                    
+                    # 保存待ちリストに追加
+                    new_idx = len(st.session_state.master_df) - 1
+                    st.session_state.pending_indices.add(new_idx)
+                    
+                    st.toast(f"📍 任務『{f_content}』をボードに追加しました")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error("タスク内容が空欄です")
     
     # 修正点：toggleの状態をセッションに直結
     st.session_state.bulk_mode = st.toggle("🛠️ 一括選択モード", value=st.session_state.bulk_mode)
@@ -131,6 +182,7 @@ with st.sidebar:
     
     st.divider()
 
+ 
     # フィルタ
     all_subjects = sorted(st.session_state.master_df['科目名'].unique().tolist()) if not st.session_state.master_df.empty else []
     subject_filter = st.multiselect("科目名", all_subjects, default=all_subjects)
